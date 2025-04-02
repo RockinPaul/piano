@@ -216,11 +216,13 @@ class ClefPainter extends CustomPainter with EquatableMixin {
       return;
     }
 
-    final clefHeight = (firstLineY - lastLineY);
-    final clefSymbolOffset = (clef == Clef.Treble) ? 0.45 : 0.08;
+    final clefHeight = firstLineY - lastLineY;
+    // Adjust different offsets per clef type for better vertical alignment
+    final clefSymbolOffset = (clef == Clef.Treble) ? 0.2 : (clef == Clef.Bass ? 0.15 : 0.08);
 
     if (_clefSymbolPainter == null || clefSize != _lastClefSize) {
-      final clefSymbolScale = 1.0; //(clef == Clef.Treble) ? 2.35 : 1.34;
+      // Use a more moderate scale for treble clef
+      final clefSymbolScale = (clef == Clef.Treble) ? 2.0 : (clef == Clef.Bass ? 1.6 : 1.5);
       _clefSymbolPainter = TextPainter(
         text: TextSpan(
           text: clef.symbol,
@@ -234,8 +236,13 @@ class ClefPainter extends CustomPainter with EquatableMixin {
     }
     _lastClefSize = clefSize;
 
-    _clefSymbolPainter?.paint(
-        canvas, Offset(bounds.left, lastLineY - clefSymbolOffset * clefHeight));
+    // Calculate the clef symbol position with better vertical alignment
+    final clefX = bounds.left;
+    // Use a simple, reliable position for treble clef that works across screens
+    final clefY = (clef == Clef.Treble)
+        ? lastLineY - _clefSymbolPainter!.height * 0.1 // Position slightly above the bottom line
+        : lastLineY - clefSymbolOffset * clefHeight;
+    _clefSymbolPainter?.paint(canvas, Offset(clefX, clefY));
   }
 
   @override
