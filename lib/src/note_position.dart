@@ -3,6 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'note_position.freezed.dart';
 
+
+
 enum Note { C, D, E, F, G, A, B }
 
 enum Accidental { Sharp, Flat, None }
@@ -183,4 +185,17 @@ extension NotePositionHelpers on NotePosition {
 
   bool equalsAccidentalInsensitive(NotePosition another) =>
       note == another.note && octave == another.octave;
+}
+
+// Extension methods to validate accidentals
+extension AccidentalValidation on NotePosition {
+  bool isValidAccidental() {
+    // All notes can have natural (None) accidental
+    if (accidental == Accidental.None) {
+      return true;
+    }
+    
+    // Check if the note supports this accidental
+    return note.accidentals.contains(accidental);
+  }
 }

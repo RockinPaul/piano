@@ -141,6 +141,11 @@ class ClefPainter extends CustomPainter with EquatableMixin {
         (firstLineIndex + (lastLineIndex - firstLineIndex - 1) / 2).floor();
 
     for (final noteImage in noteImages) {
+      // Skip invalid note/accidental combinations
+      if (!noteImage.notePosition.isValidAccidental()) {
+        continue;
+      }
+      
       final noteIndex = naturalPositionOf(noteImage.notePosition);
       if (noteIndex == -1) {
         continue;
@@ -189,18 +194,21 @@ class ClefPainter extends CustomPainter with EquatableMixin {
                   text: TextSpan(
                       text: noteImage.notePosition.accidental.symbol,
                       style: TextStyle(
-                          fontSize: ovalHeight * 2,
+                          fontSize: ovalHeight * 1.8, // Slightly smaller for better fit
                           color: noteImage.color ?? noteColor)),
                   textDirection: TextDirection.ltr)
                 ..layout();
         }
 
-        _accidentalSymbolPainters[noteImage.notePosition.accidental]?.paint(
-            canvas,
-            ovalRect.topLeft.translate(
-              -ovalHeight,
-              -ovalHeight / 2,
-            ));
+        // Calculate vertical center of the note oval
+        final accidentalPainter = _accidentalSymbolPainters[noteImage.notePosition.accidental]!;
+        final noteVerticalCenter = ovalRect.top + ovalRect.height / 2;
+        
+        // Position accidental to the left of the note, aligned with the note's vertical center
+        final accidentalLeft = ovalRect.left - accidentalPainter.width - ovalWidth * 0.1;
+        final accidentalTop = noteVerticalCenter - accidentalPainter.height / 2;
+        
+        accidentalPainter.paint(canvas, Offset(accidentalLeft, accidentalTop));
       }
     }
 
@@ -212,14 +220,17 @@ class ClefPainter extends CustomPainter with EquatableMixin {
     final clefSymbolOffset = (clef == Clef.Treble) ? 0.45 : 0.08;
 
     if (_clefSymbolPainter == null || clefSize != _lastClefSize) {
-      final clefSymbolScale = 1.0;//(clef == Clef.Treble) ? 2.35 : 1.34;
+      final clefSymbolScale = 1.0; //(clef == Clef.Treble) ? 2.35 : 1.34;
       _clefSymbolPainter = TextPainter(
-          text: TextSpan(
-              text: clef.symbol,
-              style: TextStyle(
-                  fontSize: clefHeight * clefSymbolScale, color: clefColor)),
-          textDirection: TextDirection.ltr)
-        ..layout();
+        text: TextSpan(
+          text: clef.symbol,
+          style: TextStyle(
+            fontSize: clefHeight * clefSymbolScale,
+            color: clefColor,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
     }
     _lastClefSize = clefSize;
 

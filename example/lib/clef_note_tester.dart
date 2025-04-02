@@ -13,8 +13,16 @@ class _ClefNoteTesterScreenState extends State<ClefNoteTesterScreen> {
   Clef _selectedClef = Clef.Treble;
   Note _selectedNote = Note.C;
   int _selectedOctave = 4;
+  Accidental _selectedAccidental = Accidental.None;
   Color _noteColor = Colors.black;
   Color _clefColor = Colors.black;
+
+  // Returns available accidentals for the currently selected note
+  Set<Accidental> get _availableAccidentals {
+    final Set<Accidental> result = {Accidental.None};
+    result.addAll(_selectedNote.accidentals);
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +57,7 @@ class _ClefNoteTesterScreenState extends State<ClefNoteTesterScreen> {
                               notePosition: NotePosition(
                                 note: _selectedNote,
                                 octave: _selectedOctave,
+                                accidental: _selectedAccidental,
                               ),
                             ),
                           ],
@@ -64,8 +73,8 @@ class _ClefNoteTesterScreenState extends State<ClefNoteTesterScreen> {
           ),
           
           // Controls Area
-          Expanded(
-            flex: 3,
+          Container(
+            height: MediaQuery.of(context).size.height * 0.4, // Fixed height instead of Expanded
             child: Card(
               margin: const EdgeInsets.all(16),
               elevation: 4,
@@ -73,6 +82,7 @@ class _ClefNoteTesterScreenState extends State<ClefNoteTesterScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: SingleChildScrollView(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min, // Important to prevent unbounded height error
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                     // Clef Selector
@@ -124,10 +134,12 @@ class _ClefNoteTesterScreenState extends State<ClefNoteTesterScreen> {
                           child: DropdownButton<Note>(
                             value: _selectedNote,
                             isExpanded: true,
-                            onChanged: (Note? value) {
-                              if (value != null) {
+                            onChanged: (Note? newValue) {
+                              if (newValue != null) {
                                 setState(() {
-                                  _selectedNote = value;
+                                  _selectedNote = newValue;
+                                  // Reset accidental when note changes
+                                  _selectedAccidental = Accidental.None;
                                 });
                               }
                             },
@@ -144,26 +156,113 @@ class _ClefNoteTesterScreenState extends State<ClefNoteTesterScreen> {
                     
                     const SizedBox(height: 16),
                     
+                    // Accidental Selector
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text('Accidental:', style: TextStyle(fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 10),
+                            // Show note-specific accidental information
+                            Text(
+                              _selectedNote.accidentals.isEmpty
+                                ? '(${_selectedNote.toString().split('.').last} has no accidentals)'
+                                : '(Available: ${_getAccidentalDescription()})',
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SegmentedButton<Accidental>(
+                          segments: [
+                            ButtonSegment<Accidental>(
+                              value: Accidental.None,
+                              label: const Text('♮'),
+                            ),
+                            ButtonSegment<Accidental>(
+                              value: Accidental.Sharp,
+                              label: const Text('♯'),
+                              enabled: _availableAccidentals.contains(Accidental.Sharp),
+                            ),
+                            ButtonSegment<Accidental>(
+                              value: Accidental.Flat,
+                              label: const Text('♭'),
+                              enabled: _availableAccidentals.contains(Accidental.Flat),
+                            ),
+                          ],
+                          selected: {_selectedAccidental},
+                          onSelectionChanged: (Set<Accidental> newSelection) {
+                            // Only change if this is a valid accidental for this note
+                            if (_availableAccidentals.contains(newSelection.first)) {
+                              setState(() {
+                                _selectedAccidental = newSelection.first;
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
                     // Octave Selector
-                    Row(
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('Octave:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Slider(
-                            value: _selectedOctave.toDouble(),
-                            min: 2,
-                            max: 6,
-                            divisions: 4,
-                            label: _selectedOctave.toString(),
-                            onChanged: (double value) {
-                              setState(() {
-                                _selectedOctave = value.round();
-                              });
-                            },
-                          ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle_outline),
+                              onPressed: _selectedOctave > 2
+                                  ? () {
+                                      setState(() {
+                                        _selectedOctave--;
+                                      });
+                                    }
+                                  : null,
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: _selectedOctave.toDouble(),
+                                min: 2,
+                                max: 6,
+                                divisions: 4,
+                                label: _selectedOctave.toString(),
+                                onChanged: (double value) {
+                                  setState(() {
+                                    _selectedOctave = value.round();
+                                  });
+                                },
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline),
+                              onPressed: _selectedOctave < 6
+                                  ? () {
+                                      setState(() {
+                                        _selectedOctave++;
+                                      });
+                                    }
+                                  : null,
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                _selectedOctave.toString(),
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(_selectedOctave.toString()),
                       ],
                     ),
                     
@@ -231,11 +330,12 @@ class _ClefNoteTesterScreenState extends State<ClefNoteTesterScreen> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             color: Colors.grey[200],
+            width: double.infinity,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Current Note: ${_selectedNote.toString().split('.').last}${_selectedOctave}',
+                  'Current Note: ${_selectedNote.toString().split('.').last}${_selectedAccidental.symbol}${_selectedOctave}',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Text(
@@ -258,6 +358,7 @@ class _ClefNoteTesterScreenState extends State<ClefNoteTesterScreen> {
     NotePosition position = NotePosition(
       note: _selectedNote,
       octave: _selectedOctave,
+      accidental: _selectedAccidental,
     );
     
     // This is a simplified description - in a real app you might want to
@@ -288,6 +389,12 @@ class _ClefNoteTesterScreenState extends State<ClefNoteTesterScreen> {
           return "On staff";
         }
     }
+  }
+  
+  String _getAccidentalDescription() {
+    final accidentals = _selectedNote.accidentals;
+    final symbols = accidentals.map((a) => a.symbol).join(', ');
+    return symbols;
   }
   
   void _showColorPicker(BuildContext context, bool isClefColor) {
