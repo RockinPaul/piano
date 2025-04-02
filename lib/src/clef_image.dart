@@ -27,8 +27,9 @@ class ClefImage extends StatelessWidget {
         super(key: key);
 
   @override
-  Widget build(BuildContext context) => ClipRect(
-          child: CustomPaint(
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: CustomPaint(
         painter: ClefPainter(
           clef: clef,
           clefColor: clefColor,
@@ -39,5 +40,7 @@ class ClefImage extends StatelessWidget {
           noteImages: noteImages,
         ),
         size: size,
-      ));
+      ),
+    );
+  }
 }
